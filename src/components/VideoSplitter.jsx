@@ -11,6 +11,7 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { Upload, Play, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Separator } from "./ui/separator";
 
 const VideoSplitter = () => {
   const [video, setVideo] = useState(null);
@@ -114,7 +115,7 @@ const VideoSplitter = () => {
   if (!video) {
     return (
       <div
-        className={`border border-dashed rounded-lg p-8 mt-8 text-center ${
+        className={`border border-dashed rounded-lg p-12 mt-8 text-center ${
           dragActive ? "border-primary bg-primary/10" : "border-border"
         }`}
         onDragEnter={handleDrag}
@@ -135,7 +136,7 @@ const VideoSplitter = () => {
         />
         <label
           htmlFor="file-upload"
-          className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-primary-foreground bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+          className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
         >
           Select File
         </label>
@@ -144,15 +145,16 @@ const VideoSplitter = () => {
   }
 
   return (
-    <div className="flex gap-4 items-start">
-      <div className="flex-3 border border-dashed rounded-lg p-4 sticky top-4">
+    <div className="flex flex-col lg:flex-row gap-4 items-start">
+      <div className="flex-2 border border-dashed rounded-lg p-4 lg:sticky lg:top-4">
         <video
           ref={videoRef}
           src={URL.createObjectURL(video)}
           controls
           className="w-full mb-4"
         />
-        <div className="mt-8">
+        <Separator className="my-4" />
+        <div>
           <h2 className="text-lg font-semibold mb-2">
             Select Split Time (minutes)
           </h2>
@@ -168,7 +170,7 @@ const VideoSplitter = () => {
       </div>
 
       {segments.length > 0 && (
-        <div className="border rounded-lg p-4 flex-4">
+        <div className="border rounded-lg p-4 flex-3 w-full">
           <Table>
             <TableHeader>
               <TableRow>
@@ -186,13 +188,13 @@ const VideoSplitter = () => {
                   <TableCell>{formatTime(segment.to)}</TableCell>
                   <TableCell>
                     {segment.isProcessed ? (
-                      <Button onClick={() => handleDownload(segment.id)}>
+                      <Button className="w-full text-white" onClick={() => handleDownload(segment.id)}>
                         <Download className="mr-2 h-4 w-4" /> Download
                       </Button>
                     ) : segment.isProcessing ? (
-                      <Button disabled>Processing...</Button>
+                      <Button variant="outline" className="w-full" disabled>Processing...</Button>
                     ) : (
-                      <Button onClick={() => handleProcess(segment.id)}>
+                      <Button variant="outline" className="w-full" onClick={() => handleProcess(segment.id)}>
                         <Play className="mr-2 h-4 w-4" /> Process
                       </Button>
                     )}
