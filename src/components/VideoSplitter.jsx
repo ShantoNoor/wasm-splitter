@@ -177,7 +177,7 @@ const VideoSplitter = () => {
                 <TableHead>Segment</TableHead>
                 <TableHead>From</TableHead>
                 <TableHead>To</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -186,16 +186,16 @@ const VideoSplitter = () => {
                   <TableCell>{segment.name}</TableCell>
                   <TableCell>{formatTime(segment.from)}</TableCell>
                   <TableCell>{formatTime(segment.to)}</TableCell>
-                  <TableCell>
+                  <TableCell className="max-w-30 text-center">
                     {segment.isProcessed ? (
-                      <Button className="w-full text-white" onClick={() => handleDownload(segment.id)}>
-                        <Download className="mr-2 h-4 w-4" /> Download
+                      <Button className="text-white w-30" onClick={() => handleDownload(segment.id)}>
+                        <Download className="mr-1 h-4 w-4" /> Download
                       </Button>
                     ) : segment.isProcessing ? (
-                      <Button variant="outline" className="w-full" disabled>Processing...</Button>
+                      <Button className="w-30" variant="outline" disabled>Processing ...</Button>
                     ) : (
-                      <Button variant="outline" className="w-full" onClick={() => handleProcess(segment.id)}>
-                        <Play className="mr-2 h-4 w-4" /> Process
+                      <Button className="w-30" variant="outline" onClick={() => handleProcess(segment.id)}>
+                        <Play className="mr-1 h-4 w-4" /> Process
                       </Button>
                     )}
                   </TableCell>
