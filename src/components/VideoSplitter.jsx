@@ -12,6 +12,9 @@ import { Slider } from "@/components/ui/slider";
 import { Upload, Play, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "./ui/separator";
+import { fetchFile } from "@ffmpeg/util";
+import { ffmpeg } from "../lib/ffmpeg";
+import { toast } from "sonner";
 
 const VideoSplitter = () => {
   const [video, setVideo] = useState(null);
@@ -70,45 +73,60 @@ const VideoSplitter = () => {
     }
   };
 
-  const handleFile = (file) => {
+  const handleFile = async (file) => {
+    const tid = toast.loading("Loading ...");
+
     if (file.type.startsWith("video/")) {
+      try {
+        await ffmpeg.writeFile(`input/${file.name}`, await fetchFile(file));
+      } catch (e) {
+        toast.dismiss(tid);
+        toast.error("Unable to writeFile");
+        console.log(e);
+        return;
+      }
+
+      // const files = await ffmpeg.listDir("input/");
+      // console.log("Files in the virtual filesystem:", files);
+
       setVideo(file);
       const video = document.createElement("video");
       video.preload = "metadata";
-      video.onloadedmetadata = () => {
+      video.onloadedmetadata = async () => {
         window.URL.revokeObjectURL(video.src);
         setVideoDuration(video.duration);
       };
       video.src = URL.createObjectURL(file);
     } else {
-      alert("Please upload a valid video file.");
+      toast.warning("Please upload a valid video file.");
     }
+    toast.dismiss(tid);
   };
 
   const handleSplitTimeChange = (value) => {
     setSplitTime(value[0]);
   };
 
-  const handleProcess = (id) => {
-    setSegments(
-      segments.map((segment) =>
-        segment.id === id ? { ...segment, isProcessing: true } : segment
-      )
+  const handleProcess = async (id) => {
+    setSegments((segments) =>
+      segments.map((segment) => {
+        return id == segment.id
+          ? { ...segment, isProcessing: true, isProcessed: false }
+          : { ...segment, isProcessed: false };
+      })
     );
-    // Simulate processing
-    setTimeout(() => {
-      setSegments(
-        segments.map((segment) =>
-          segment.id === id
-            ? { ...segment, isProcessing: false, isProcessed: true }
-            : segment
-        )
-      );
-    }, 2000);
+
+    setSegments((segments) =>
+      segments.map((segment) => {
+        return id == segment.id
+          ? { ...segment, isProcessing: false, isProcessed: true }
+          : segment;
+      })
+    );
   };
 
   const handleDownload = (id) => {
-    console.log(`Downloading segment ${id}`);
+    alert(`Downloading segment ${id}`);
     // Implement actual download logic here
   };
 
@@ -188,13 +206,22 @@ const VideoSplitter = () => {
                   <TableCell>{formatTime(segment.to)}</TableCell>
                   <TableCell className="max-w-30 text-center">
                     {segment.isProcessed ? (
-                      <Button className="text-white w-30" onClick={() => handleDownload(segment.id)}>
+                      <Button
+                        className="text-white w-30"
+                        onClick={() => handleDownload(segment.id)}
+                      >
                         <Download className="mr-1 h-4 w-4" /> Download
                       </Button>
                     ) : segment.isProcessing ? (
-                      <Button className="w-30" variant="outline" disabled>Processing ...</Button>
+                      <Button className="w-30" variant="outline" disabled>
+                        Processing ...
+                      </Button>
                     ) : (
-                      <Button className="w-30" variant="outline" onClick={() => handleProcess(segment.id)}>
+                      <Button
+                        className="w-30"
+                        variant="outline"
+                        onClick={() => handleProcess(segment.id)}
+                      >
                         <Play className="mr-1 h-4 w-4" /> Process
                       </Button>
                     )}

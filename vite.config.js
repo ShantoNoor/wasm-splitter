@@ -7,7 +7,7 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   optimizeDeps: {
-    exclude: ["@ffmpeg/ffmpeg"],
+    exclude: ["@ffmpeg/ffmpeg", "@ffmpeg/util"],
   },
   server: {
     headers: {
