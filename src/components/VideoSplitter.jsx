@@ -13,10 +13,9 @@ import { Upload, Play, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "./ui/separator";
 import { fetchFile } from "@ffmpeg/util";
-import { ffmpeg } from "../lib/ffmpeg";
 import { toast } from "sonner";
 
-const VideoSplitter = () => {
+const VideoSplitter = ({ ffmpeg }) => {
   const [video, setVideo] = useState(null);
   const [splitTime, setSplitTime] = useState(30); // Default to 30 minutes
   const [videoDuration, setVideoDuration] = useState(0);
@@ -78,7 +77,7 @@ const VideoSplitter = () => {
 
     if (file.type.startsWith("video/")) {
       try {
-        await ffmpeg.writeFile(`input/${file.name}`, await fetchFile(file));
+        await ffmpeg.writeFile(file.name, await fetchFile(file));
       } catch (e) {
         toast.dismiss(tid);
         toast.error("Unable to writeFile");
@@ -86,8 +85,8 @@ const VideoSplitter = () => {
         return;
       }
 
-      // const files = await ffmpeg.listDir("input/");
-      // console.log("Files in the virtual filesystem:", files);
+      // const ifiles = await ffmpeg.listDir("input/");
+      // console.log("Files in the virtual filesystem:", ifiles);
 
       setVideo(file);
       const video = document.createElement("video");
@@ -116,18 +115,59 @@ const VideoSplitter = () => {
       })
     );
 
-    setSegments((segments) =>
-      segments.map((segment) => {
-        return id == segment.id
-          ? { ...segment, isProcessing: false, isProcessed: true }
-          : segment;
-      })
-    );
+    console.log(segments[id]);
+
+    // `ffmpeg -ss ${gts(i-1)} -to ${gts(i)} -i '${name}.${file_extension}' -c copy '${name}-${i}.${file_extension}'`
+    // `ffmpeg -ss ${gts(i-1)} -i '${name}.${file_extension}' -c copy '${name}-${i}.${file_extension}'`
+
+    const tid = toast.loading(segments[id].name + " - processing");
+    try {
+      await ffmpeg.exec([
+        "-ss",
+        `${segments[id].from}`,
+        "-to",
+        `${segments[id].to}`,
+        "-i",
+        `${video.name}`,
+        "-c",
+        "copy",
+        `${segments[id].name}`,
+      ]);
+      setSegments((segments) =>
+        segments.map((segment) => {
+          return id == segment.id
+            ? { ...segment, isProcessing: false, isProcessed: true }
+            : segment;
+        })
+      );
+      toast.success(segments[id].name + " - completed");
+    } catch (e) {
+      console.log(e);
+      setSegments((segments) =>
+        segments.map((segment) => {
+          return id == segment.id
+            ? { ...segment, isProcessing: false, isProcessed: false }
+            : segment;
+        })
+      );
+      toast.error(segments[id].name + " - failed");
+    } finally {
+      toast.dismiss(tid);
+    }
   };
 
-  const handleDownload = (id) => {
-    alert(`Downloading segment ${id}`);
-    // Implement actual download logic here
+  const handleDownload = async (id) => {
+    const data = await ffmpeg.readFile(segments[id].name);
+
+    // Create a URL
+    const url = URL.createObjectURL(
+      new Blob([data.buffer], { type: `video/${video.name.split(".")[1]}` })
+    );
+
+    const atag = document.createElement("a");
+    atag.setAttribute("href", url);
+    atag.setAttribute("download", segments[id].name);
+    atag.click();
   };
 
   if (!video) {

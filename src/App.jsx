@@ -1,24 +1,23 @@
 import { useEffect, useState } from "react";
 import Loading from "./components/Loading";
 import VideoSplitter from "./components/VideoSplitter";
-import { ffmpeg } from "./lib/ffmpeg";
 import { ModeToggle } from "./components/ui/mode-toggle";
 import { Separator } from "@/components/ui/separator";
 import { Toaster } from "./components/ui/sonner";
+import { FFmpeg } from "@ffmpeg/ffmpeg";
+const ffmpeg = new FFmpeg();
 
 function App() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const load = async () => {
-      await ffmpeg.load();
       try {
-        await ffmpeg.createDir("input");
-        await ffmpeg.createDir("output");
+        await ffmpeg.load();
+        setReady(true);
       } catch (er) {
         console.log(er);
       }
-      setReady(true);
     };
 
     load();
@@ -37,9 +36,9 @@ function App() {
           </div>
         </div>
         <Separator className="my-4" />
-        {ready ? <VideoSplitter /> : <Loading />}
+        {ready ? <VideoSplitter ffmpeg={ffmpeg} /> : <Loading />}
       </div>
-      <Toaster position="top-right" closeButton richColors />
+      <Toaster position="top-center" closeButton richColors />
     </div>
   );
 }
