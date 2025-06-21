@@ -9,11 +9,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Slider } from "@/components/ui/slider";
-import { Upload, Play, Download } from "lucide-react";
+import { Upload, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "./ui/separator";
 import { fetchFile } from "@ffmpeg/util";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const VideoSplitter = ({ ffmpeg }) => {
   const [video, setVideo] = useState(null);
@@ -22,6 +33,8 @@ const VideoSplitter = ({ ffmpeg }) => {
   const [segments, setSegments] = useState([]);
   const [dragActive, setDragActive] = useState(false);
   const videoRef = useRef(null);
+  const [disabled, setDisabled] = useState(false);
+  const [last, setLast] = useState(null);
 
   useEffect(() => {
     if (videoDuration > 0 && video) {
@@ -107,6 +120,22 @@ const VideoSplitter = ({ ffmpeg }) => {
   };
 
   const handleProcess = async (id) => {
+    setDisabled(true);
+    const tid = toast.loading(segments[id].name + " - processing");
+
+    if(last) {
+      try{
+        ffmpeg.deleteFile(segments[last.id].name)
+        URL.revokeObjectURL(last.url);
+        setLast(null);
+      } catch(e) {
+        console.log(e);
+        toast.error(segments[id].name + " - failed");
+        toast.dismiss(tid);
+        return;
+      }
+    }
+
     setSegments((segments) =>
       segments.map((segment) => {
         return id == segment.id
@@ -115,12 +144,9 @@ const VideoSplitter = ({ ffmpeg }) => {
       })
     );
 
-    console.log(segments[id]);
-
     // `ffmpeg -ss ${gts(i-1)} -to ${gts(i)} -i '${name}.${file_extension}' -c copy '${name}-${i}.${file_extension}'`
     // `ffmpeg -ss ${gts(i-1)} -i '${name}.${file_extension}' -c copy '${name}-${i}.${file_extension}'`
 
-    const tid = toast.loading(segments[id].name + " - processing");
     try {
       await ffmpeg.exec([
         "-ss",
@@ -154,6 +180,8 @@ const VideoSplitter = ({ ffmpeg }) => {
     } finally {
       toast.dismiss(tid);
     }
+
+    handleDownload(id)
   };
 
   const handleDownload = async (id) => {
@@ -163,6 +191,8 @@ const VideoSplitter = ({ ffmpeg }) => {
     const url = URL.createObjectURL(
       new Blob([data.buffer], { type: `video/${video.name.split(".")[1]}` })
     );
+
+    setLast({url, id});
 
     const atag = document.createElement("a");
     atag.setAttribute("href", url);
@@ -218,12 +248,40 @@ const VideoSplitter = ({ ffmpeg }) => {
           </h2>
           <Slider
             value={[splitTime]}
+            disabled={disabled}
             onValueChange={handleSplitTimeChange}
             min={1}
             max={60}
             step={1}
           />
           <p className="mt-2">Split every {splitTime} minutes</p>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              {disabled && (
+                <div className="text-right">
+                  <Button className="text-white ml-auto" size="sm">
+                    Reset
+                  </Button>
+                </div>
+              )}
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete
+                  your account and remove your data from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction className="text-white" onClick={() => location.reload()}>
+                  Continue
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
@@ -262,7 +320,7 @@ const VideoSplitter = ({ ffmpeg }) => {
                         variant="outline"
                         onClick={() => handleProcess(segment.id)}
                       >
-                        <Play className="mr-1 h-4 w-4" /> Process
+                        <Download className="mr-1 h-4 w-4" /> Download
                       </Button>
                     )}
                   </TableCell>
