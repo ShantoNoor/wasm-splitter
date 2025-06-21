@@ -2,6 +2,10 @@
 
 A fast and intuitive web application to split videos directly in your browser using **FFmpeg.wasm**. No installation or signup required — just upload, set the duration, and download segmented video clips.
 
+## Live 
+
+[https://wasm-splitter.netlify.app](https://wasm-splitter.netlify.app)
+
 ## ✨ Features
 
 - ⚡ Drag-and-drop or upload videos directly from your device
